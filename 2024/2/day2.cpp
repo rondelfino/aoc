@@ -16,8 +16,8 @@ bool is_safe_report(const std::vector<int> &report)
     for (size_t i = 1; i < report.size() && safe; i++)
     {
         difference = report[i] - report[i - 1];
-        bool order_check = (difference > 0) == increasing;
-        safe = std::abs(difference) >= 0 && std::abs(difference) <= 3 && order_check;
+        bool valid_order = (difference > 0) == increasing;
+        safe = std::abs(difference) >= 0 && std::abs(difference) <= 3 && valid_order;
     }
     return safe;
 }
