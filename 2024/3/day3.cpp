@@ -26,7 +26,7 @@ int main(void)
         {
             for (int i = 0; i < line.size(); i++)
             {
-                if (i + 7 < line.size() && line.substr(i, 7) == "don't()")
+                if (i + 6 < line.size() && line.substr(i, 7) == "don't()")
                 {
                     in_dont_context = true; // Enter "don't()" context
                     i += 7;                 // Skip past "don't()"
@@ -34,7 +34,7 @@ int main(void)
                 else if (i + 3 < line.size() && line.substr(i, 4) == "do()")
                 {
                     in_dont_context = false; // Leave "don't()" context
-                    i += 3;                  // Skip past "do()"
+                    i += 4;                  // Skip past "do()"
                 }
 
                 if (!in_dont_context && i + 3 < line.size() && line.substr(i, 4) == "mul(")
