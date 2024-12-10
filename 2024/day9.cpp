@@ -1,3 +1,5 @@
+#include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <stdlib.h>
@@ -5,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-static uint64_t id = 0;
+static uint64_t id;
 
 std::vector<int> read_from_file(const std::string &filename)
 {
@@ -32,27 +34,29 @@ std::vector<int> read_from_file(const std::string &filename)
 
 std::vector<std::string> create_disk_layout(const std::vector<int> &input)
 {
-    std::vector<std::string> disk_layout;
+    size_t total_size = 0;
+    for (size_t i = 0; i < input.size(); i += 2)
+    {
+        total_size += input[i];
+        if (i + 1 < input.size())
+            total_size += input[i + 1];
+    }
 
-    // Ensure input has valid pairs of (blocks, free_space)
+    std::vector<std::string> disk_layout(total_size);
+
+    size_t pos = 0;
     for (size_t i = 0; i < input.size(); i += 2)
     {
         int blocks = input[i];
-        int free_space = 0;
-        if (i + 1 < input.size())
-        {
-            free_space = input[i + 1];
-        }
+        int free_space = (i + 1 < input.size()) ? input[i + 1] : 0;
 
-        // Preallocate space for efficiency
-        disk_layout.reserve(disk_layout.size() + blocks + free_space);
-
-        // Add 'blocks' number of ids
         std::string id_str = std::to_string(id);
-        disk_layout.insert(disk_layout.end(), blocks, id_str);
 
-        // Add 'free_space' number of "."
-        disk_layout.insert(disk_layout.end(), free_space, ".");
+        std::fill_n(disk_layout.begin() + pos, blocks, id_str);
+        pos += blocks;
+
+        std::fill_n(disk_layout.begin() + pos, free_space, ".");
+        pos += free_space;
 
         id++;
     }
@@ -62,22 +66,22 @@ std::vector<std::string> create_disk_layout(const std::vector<int> &input)
 
 void sort_disk1(std::vector<std::string> &disk_layout)
 {
-    uint64_t left = 0;
-    uint64_t right = disk_layout.size() - 1;
+    int left = 0, right = disk_layout.size() - 1;
 
-    while (disk_layout[right] == ".")
-        right--;
-    while (disk_layout[left] != ".")
-        left++;
-
-    while (left != right)
+    while (left < right)
     {
-        std::swap(disk_layout[left], disk_layout[right]);
-
-        while (disk_layout[right] == "." && left != right)
-            right--;
-        while (disk_layout[left] != "." && left != right)
+        while (left < right && disk_layout[left] != ".")
             left++;
+
+        while (left < right && disk_layout[right] == ".")
+            right--;
+
+        if (left < right)
+        {
+            std::swap(disk_layout[left], disk_layout[right]);
+            left++;
+            right--;
+        }
     }
 }
 
@@ -108,14 +112,15 @@ void sort_disk2(std::vector<std::string> &disk_layout)
 
     while (left < right && current_id >= 0)
     {
+        std::string id_str = std::to_string(current_id);
         int free_space_size = 0;
         int block_size = 0;
 
-        while (disk_layout[right] != std::to_string(current_id))
+        while (disk_layout[right] != id_str)
             right--;
 
         int block_start = right;
-        while (disk_layout[block_start] == std::to_string(current_id))
+        while (disk_layout[block_start] == id_str)
         {
             block_start--;
             block_size++;
@@ -170,14 +175,13 @@ int main(void)
     std::vector<int> input = read_from_file("input.txt");
     std::vector<std::string> disk_layout = create_disk_layout(input);
     // sort_disk1(disk_layout);
-    sort_disk2(disk_layout);
-    uint64_t checksum = calc_checksum(disk_layout);
 
-    for (int i = 0; i < disk_layout.size(); i++)
-    {
-        std::cout << disk_layout[i];
-    }
-    std::cout << '\n';
+    auto start = std::chrono::high_resolution_clock::now();
+    sort_disk2(disk_layout);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+              << "ms\n";
+    uint64_t checksum = calc_checksum(disk_layout);
 
     std::cout << checksum << '\n';
 
